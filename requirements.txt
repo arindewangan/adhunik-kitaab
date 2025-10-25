@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+motor
+pydantic
+pydantic-settings
+httpx
+python-dotenv
+python-multipart
+scikit-learn   # optional if you later use similarity functions
+flask
+requests
+passlib[bcrypt]
+PyJWT

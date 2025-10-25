@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or 'Adhunik Kitaab' }}</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a href="{{ url_for('index') }}" class="brand">Adhunik Kitaab</a>
+      <nav class="nav">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('recommend') }}">Recommendations</a>
+        {% if user %}
+          <a href="{{ url_for('my_ratings') }}">My Ratings</a>
+          <span class="user">Hi, {{ user.name or user.email }}</span>
+          <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login_page') }}">Login</a>
+          <a href="{{ url_for('signup_page') }}" class="btn btn--link">Sign Up</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-list">
+          {% for category, message in messages %}
+            <div class="flash flash--{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container">Powered by Google Books and FastAPI • Frontend: Flask</div>
+  </footer>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.rating input[type="radio"]').forEach(function(el) {
+        el.addEventListener('change', function() {
+          var form = el.closest('form');
+          if (form) { form.submit(); }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

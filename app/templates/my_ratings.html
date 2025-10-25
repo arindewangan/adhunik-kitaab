@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero">
+  <h1 class="text-2xl font-semibold">My Ratings</h1>
+  <p class="text-sm text-gray-400">Click on stars to update your ratings</p>
+</div>
+
+{% if ratings and ratings|length > 0 %}
+<div class="cards">
+  {% for rating in ratings %}
+  <div class="book">
+    <div class="thumb">
+      {% if rating.thumbnail %}
+        <img src="{{ rating.thumbnail }}" alt="{{ rating.title or 'Book' }} cover">
+      {% else %}
+        <div class="placeholder">
+          <span class="text-gray-500 text-xs">Book ID: {{ rating.book_id[:8] }}...</span>
+        </div>
+      {% endif %}
+    </div>
+    <div class="meta">
+      <h3>
+        {% if rating.infoLink %}
+          <a href="{{ rating.infoLink }}" target="_blank" rel="noopener noreferrer" class="book-title-link" aria-label="View details for {{ rating.title or 'this book' }}">{{ rating.title or rating.book_id }}</a>
+        {% else %}
+          {{ rating.title or rating.book_id }}
+        {% endif %}
+      </h3>
+      <p class="text-gray-400">{{ rating.authors|join(', ') if rating.authors else 'Unknown Author' }}</p>
+      {% if rating.categories %}
+        <p class="text-gray-400">{{ rating.categories|join(', ') }}</p>
+      {% endif %}
+      {% if rating.publisher %}
+        <p class="text-gray-400 text-xs">{{ rating.publisher }}{% if rating.publishedDate %}, {{ rating.publishedDate }}{% endif %}</p>
+      {% endif %}
+      
+      <!-- Interactive Star Rating -->
+      <div class="interactive-rating mt-3">
+        <form method="post" action="{{ url_for('update_rating') }}" class="rating-form">
+          <input type="hidden" name="book_id" value="{{ rating.book_id }}">
+          <input type="hidden" name="title" value="{{ rating.title or '' }}">
+          <input type="hidden" name="authors" value="{{ rating.authors|join(', ') if rating.authors else '' }}">
+          <input type="hidden" name="categories" value="{{ rating.categories|join(', ') if rating.categories else '' }}">
+          <input type="hidden" name="thumbnail" value="{{ rating.thumbnail or '' }}">
+          <input type="hidden" name="infoLink" value="{{ rating.infoLink or '' }}">
+          <input type="hidden" name="publisher" value="{{ rating.publisher or '' }}">
+          <input type="hidden" name="publishedDate" value="{{ rating.publishedDate or '' }}">
+          
+          <div class="star-rating" data-book-id="{{ rating.book_id }}" data-current-rating="{{ rating.rating }}">
+            {% for i in range(5) %}
+              <span class="star {% if (i + 1) <= rating.rating %}filled{% else %}empty{% endif %}" 
+                    data-rating="{{ i + 1 }}" 
+                    onclick="updateRating('{{ rating.book_id }}', {{ i + 1 }})">★</span>
+            {% endfor %}
+          </div>
+          <span class="rating-text text-sm text-gray-400">({{ rating.rating }}/5)</span>
+        </form>
+        
+        <!-- Delete Rating Option -->
+        <form method="post" action="{{ url_for('update_rating') }}" class="inline mt-2">
+          <input type="hidden" name="book_id" value="{{ rating.book_id }}">
+          <button type="submit" name="action" value="delete" class="text-red-400 hover:text-red-300 text-xs" 
+                  onclick="return confirm('Are you sure you want to delete this rating?')">
+            Delete Rating
+          </button>
+        </form>
+      </div>
+      
+      {% if rating.timestamp %}
+        <p class="text-xs text-gray-500 mt-2">Rated on {{ rating.timestamp.strftime('%B %d, %Y') if rating.timestamp.strftime else rating.timestamp }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="mt-6 text-center">
+  <p class="text-gray-400 text-sm">Total ratings: {{ ratings|length }}</p>
+</div>
+
+{% else %}
+  <div class="text-center py-8">
+    <p class="text-gray-400 text-lg">You haven't rated any books yet.</p>
+    <p class="text-gray-500 text-sm mt-2">Start by searching for books and rating them!</p>
+    <div class="mt-4">
+      <a href="{{ url_for('index') }}" class="btn btn--primary">Browse Books</a>
+    </div>
+  </div>
+{% endif %}
+
+{% if error %}
+  <div class="mt-4 p-4 bg-red-900 border border-red-700 rounded">
+    <p class="text-red-300">{{ error }}</p>
+  </div>
+{% endif %}
+
+<script>
+function updateRating(bookId, newRating) {
+  const starContainer = document.querySelector(`[data-book-id="${bookId}"]`);
+  const stars = starContainer.querySelectorAll('.star');
+  const ratingText = starContainer.parentElement.querySelector('.rating-text');
+  
+  // Update visual stars immediately
+  stars.forEach((star, index) => {
+    if (index < newRating) {
+      star.classList.add('filled');
+      star.classList.remove('empty');
+    } else {
+      star.classList.add('empty');
+      star.classList.remove('filled');
+    }
+  });
+  
+  // Update rating text
+  ratingText.textContent = `(${newRating}/5)`;
+  
+  // Submit the form
+  const form = starContainer.closest('form');
+  const ratingInput = document.createElement('input');
+  ratingInput.type = 'hidden';
+  ratingInput.name = 'rating';
+  ratingInput.value = newRating;
+  form.appendChild(ratingInput);
+  form.submit();
+}
+</script>
+
+{% endblock %}

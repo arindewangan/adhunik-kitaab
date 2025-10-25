@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero">
+  <h1 class="text-2xl font-semibold">Discover your next read</h1>
+  <p class="text-sm text-gray-400">Personalized picks when logged in; curated selections otherwise</p>
+</div>
+
+<div class="card">
+  <form method="get" action="{{ url_for('search') }}" class="form">
+    <label for="q">Search books</label>
+    <div class="search-row">
+      <input type="text" id="q" name="q" placeholder="e.g., science fiction" value="{{ request.args.get('q', '') }}">
+      <button type="submit" class="btn">Search</button>
+    </div>
+  </form>
+</div>
+
+{% set rec_list = (recommended if recommended is defined and recommended else rec_items) %}
+{% if rec_list and rec_list|length > 0 %}
+  <div class="hero">
+    <h2 class="text-xl font-semibold">Recommended</h2>
+    {% if user %}
+      <p class="text-sm text-gray-400">Based on your tastes</p>
+    {% else %}
+      <p class="text-sm text-gray-400">Popular picks to get you started</p>
+    {% endif %}
+  </div>
+
+  <div class="cards">
+    {% for b in rec_list %}
+      <div class="book">
+        <div class="thumb">
+          {% if b.thumbnail %}
+            <img src="{{ b.thumbnail }}" alt="{{ b.title }} cover">
+          {% else %}
+            <div class="placeholder">No cover</div>
+          {% endif %}
+        </div>
+        <div class="meta">
+          <h3><a href="{{ b.infoLink }}" target="_blank" rel="noopener noreferrer" class="book-title-link" aria-label="View details for {{ b.title }}">{{ b.title }}</a></h3>
+          <p class="text-gray-400">{{ b.authors|join(', ') if b.authors }}</p>
+          <p class="text-gray-400">{{ b.categories|join(', ') if b.categories }}</p>
+          {% if b.user_rating %}
+            <!-- Show existing rating with interactive update capability -->
+            <form method="post" action="{{ url_for('update_rating') }}" class="inline-form mt-2">
+              <input type="hidden" name="book_id" value="{{ b.book_id }}">
+              <input type="hidden" name="title" value="{{ b.title }}">
+              <input type="hidden" name="authors" value="{{ b.authors|join(', ') if b.authors }}">
+              <input type="hidden" name="categories" value="{{ b.categories|join(', ') if b.categories }}">
+              <input type="hidden" name="thumbnail" value="{{ b.thumbnail or '' }}">
+              <input type="hidden" name="infoLink" value="{{ b.infoLink or '' }}">
+              <input type="hidden" name="publisher" value="{{ b.publisher or '' }}">
+              <input type="hidden" name="publishedDate" value="{{ b.publishedDate or '' }}">
+              <input type="hidden" name="rating" id="rating-input-{{ b.book_id }}" value="{{ b.user_rating }}">
+              
+              <div class="star-rating" data-book-id="{{ b.book_id }}" data-current-rating="{{ b.user_rating }}">
+                <div class="stars">
+                  {% for i in range(5) %}
+                    <span class="star {% if (i + 1) <= b.user_rating %}filled{% endif %}" 
+                          onclick="updateRating('{{ b.book_id }}', {{ i + 1 }})">★</span>
+                  {% endfor %}
+                </div>
+              </div>
+              <button type="button" onclick="deleteRating('{{ b.book_id }}')" class="text-red-400 hover:text-red-300 text-xs mt-1 block">Remove Rating</button>
+            </form>
+          {% else %}
+            <!-- Show new rating form -->
+            <form method="post" action="{{ url_for('rate') }}" class="inline-form mt-2">
+              <input type="hidden" name="book_id" value="{{ b.book_id }}">
+              <input type="hidden" name="title" value="{{ b.title }}">
+              <input type="hidden" name="authors" value="{{ b.authors|join(', ') if b.authors }}">
+              <input type="hidden" name="categories" value="{{ b.categories|join(', ') if b.categories }}">
+              <input type="hidden" name="thumbnail" value="{{ b.thumbnail or '' }}">
+              <input type="hidden" name="infoLink" value="{{ b.infoLink or '' }}">
+              <input type="hidden" name="publisher" value="{{ b.publisher or '' }}">
+              <input type="hidden" name="publishedDate" value="{{ b.publishedDate or '' }}">
+              <div class="rating" id="rating-{{ b.book_id }}">
+                <input class="hidden" type="radio" id="star1-{{ b.book_id }}" name="rating" value="1" required>
+                <label class="text-yellow-400 hover:text-white transition" for="star1-{{ b.book_id }}" title="1 star"></label>
+                <input class="hidden" type="radio" id="star2-{{ b.book_id }}" name="rating" value="2">
+                <label class="text-yellow-400 hover:text-white transition" for="star2-{{ b.book_id }}" title="2 stars"></label>
+                <input class="hidden" type="radio" id="star3-{{ b.book_id }}" name="rating" value="3">
+                <label class="text-yellow-400 hover:text-white transition" for="star3-{{ b.book_id }}" title="3 stars"></label>
+                <input class="hidden" type="radio" id="star4-{{ b.book_id }}" name="rating" value="4">
+                <label class="text-yellow-400 hover:text-white transition" for="star4-{{ b.book_id }}" title="4 stars"></label>
+                <input class="hidden" type="radio" id="star5-{{ b.book_id }}" name="rating" value="5">
+                <label class="text-yellow-400 hover:text-white transition" for="star5-{{ b.book_id }}" title="5 stars"></label>
+              </div>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<script>
+function updateRating(bookId, rating) {
+    // Update visual display immediately
+    const stars = document.querySelectorAll(`[data-book-id="${bookId}"] .star`);
+    const ratingInput = document.getElementById(`rating-input-${bookId}`);
+    
+    // Update stars visual
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('filled');
+        } else {
+            star.classList.remove('filled');
+        }
+    });
+    
+    // Update rating input
+    ratingInput.value = rating;
+    
+    // Submit the form
+    const form = document.querySelector(`[data-book-id="${bookId}"]`).closest('form');
+    form.submit();
+}
+
+function deleteRating(bookId) {
+    if (confirm('Are you sure you want to remove this rating?')) {
+        const form = document.querySelector(`[data-book-id="${bookId}"]`).closest('form');
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'delete';
+        form.appendChild(actionInput);
+        form.submit();
+    }
+}
+</script>
+
+{% endblock %}
