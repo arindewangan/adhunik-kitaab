@@ -37,8 +37,9 @@ Adhunik Kitaab is a Python-based book recommendation web app with a FastAPI back
 - **Flexible Schema**: Perfect for evolving book data and user preferences
 - **JSON-like Documents**: Natural fit for book metadata and user data
 - **Scalable**: Handles growing user base and book collection
-- **Free Tier**: MongoDB Atlas offers generous free tier
+- **Free Tier**: MongoDB Atlas offers generous free tier (512MB storage)
 - **Rich Queries**: Supports complex queries for recommendations
+- **Cloud-Hosted**: No server maintenance with MongoDB Atlas
 
 **Why Motor (Async Driver)?**
 - **Non-blocking**: Async operations don't block the event loop
@@ -83,6 +84,26 @@ Adhunik Kitaab is a Python-based book recommendation web app with a FastAPI back
 - Fetching book details and covers
 - Getting genre information for recommendations
 - Populating book metadata
+
+### Recommendation Engine: **Rule-Based Algorithm** (`app/recommender.py`)
+**Why Rule-Based Instead of Machine Learning?**
+- **Simplicity**: No complex ML models to train or maintain
+- **Speed**: Instant recommendations without training time
+- **Transparency**: Easy to understand why books are recommended
+- **No Data Requirements**: Works with minimal user data
+- **Reliability**: Consistent results without model drift
+
+**How It Works:**
+- Analyzes user's rated books to find preferred genres and authors
+- Searches Google Books API for similar genres/authors
+- Scores books based on genre/author matches and user ratings
+- Filters out already-rated books
+- Returns top-scoring recommendations
+
+**What it's used for:**
+- Personalized book recommendations based on user preferences
+- Genre-based and author-based recommendations
+- Fallback recommendations for new users
 
 ### Configuration: **Pydantic Settings** (`app/config.py`)
 **Why Pydantic Settings?**

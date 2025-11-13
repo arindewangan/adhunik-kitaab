@@ -1,52 +1,52 @@
-# Book Recommendation Engine
+# Adhunik Kitaab - Book Recommendation Engine
 
-A modern web application that provides personalized book recommendations using machine learning algorithms and the Google Books API. Users can search for books, rate them, and receive tailored recommendations based on their preferences.
+A modern web application that provides personalized book recommendations using a rule-based algorithm and the Google Books API. Users can search for books, rate them, and receive tailored recommendations based on their genre and author preferences.
 
 ## Features
 
 - **User Authentication**: Secure user registration, login, and password reset functionality
 - **Book Search**: Search for books using the Google Books API
 - **Rating System**: Interactive star rating system for books
-- **Personalized Recommendations**: ML-powered recommendations based on user ratings and preferences
+- **Personalized Recommendations**: Rule-based recommendations based on user genre and author preferences
 - **User Dashboard**: View and manage personal book ratings
 - **Responsive Design**: Modern, mobile-friendly interface using Tailwind CSS
 
 ## Technology Stack
 
-- **Backend**: Python, FastAPI, SQLAlchemy
+- **Backend**: Python, FastAPI, Motor (MongoDB async driver)
 - **Frontend**: Flask, HTML5, Tailwind CSS, JavaScript
-- **Database**: SQLite (development), PostgreSQL (production ready)
-- **Machine Learning**: Scikit-learn for recommendation algorithms
+- **Database**: MongoDB (cloud-based MongoDB Atlas)
+- **Recommendation Engine**: Rule-based algorithm using genre/author matching
 - **External APIs**: Google Books API
 - **Authentication**: JWT tokens with secure session management
-- **Containerization**: Docker for easy deployment
 
 ## Project Structure
 
 ```
-Book Recommendation Engine/
+Adhunik Kitaab/
 ├── app/
 │   ├── auth.py              # Authentication logic
 │   ├── config.py            # Configuration settings
-│   ├── db.py                # Database models and connections
+│   ├── db.py                # MongoDB connection and operations
 │   ├── frontend.py          # Flask frontend application
 │   ├── google_books.py      # Google Books API integration
 │   ├── main.py              # FastAPI backend application
 │   ├── models.py            # Data models
-│   ├── recommender.py       # ML recommendation engine
+│   ├── recommender.py       # Rule-based recommendation engine
 │   ├── static/
 │   │   └── styles.css       # Custom CSS styles
 │   └── templates/           # HTML templates
-├── dockerfile               # Docker configuration
 ├── requirements.txt         # Python dependencies
 ├── .env                     # Environment variables (create from .env.example)
+├── deploy-simple.sh         # Simple EC2 deployment script
+├── simple-ec2-deploy.md   # Manual EC2 deployment guide
 └── README.md               # This file
 ```
 
 ## Prerequisites
 
 - Python 3.8+
-- Docker (for containerized deployment)
+- MongoDB Atlas account (free tier available)
 - Google Books API key (optional, for enhanced book data)
 
 ## 🚀 Local Development
@@ -61,7 +61,7 @@ Book Recommendation Engine/
 1. **Clone the repository:**
    ```bash
    git clone <repository-url>
-   cd "Book Recommendation Engine"
+   cd adhunik-kitaab
    ```
 
 2. **Create a virtual environment:**
@@ -85,25 +85,18 @@ Book Recommendation Engine/
    Create a `.env` file in the root directory:
    
    ```env
-   # Database
-   DATABASE_URL=sqlite:///./books.db
+   # Application Configuration
+   PORT=8000
    
-   # API Configuration
-   API_PORT=8000
-   FRONTEND_PORT=5001
+   # MongoDB Configuration
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?appName=Cluster0
+   DB_NAME=book_reco
    
    # Security
    SECRET_KEY=your-secret-key-here
-   JWT_SECRET_KEY=your-jwt-secret-key-here
    
    # Google Books API (optional)
    GOOGLE_BOOKS_API_KEY=your-google-books-api-key
-   
-   # Email Configuration (for password reset)
-   SMTP_SERVER=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USERNAME=your-email@gmail.com
-   SMTP_PASSWORD=your-app-password
    ```
 
 5. **Initialize the database:**
@@ -135,30 +128,21 @@ Book Recommendation Engine/
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
 
-## Docker Deployment
+## Deployment
 
-### Build and Run with Docker
+### Simple EC2 Deployment (Recommended)
 
-```bash
-# Build the Docker image
-docker build -t book-recommendation-engine .
-
-# Run the container
-docker run -p 8000:8000 -p 5001:5001 --env-file .env book-recommendation-engine
-```
-
-### Using Docker Compose
+For easy deployment to AWS EC2 without Docker, use the provided deployment script:
 
 ```bash
-# Start all services
-docker-compose up -d
+# Make script executable
+chmod +x deploy-simple.sh
 
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+# Run deployment script
+./deploy-simple.sh
 ```
+
+Or follow the manual deployment guide in `simple-ec2-deploy.md`.
 
 ## AWS EC2 Deployment
 
@@ -179,35 +163,40 @@ docker-compose down
 ssh -i your-key.pem ec2-user@your-ec2-public-ip
 ```
 
-### 3. Install Docker
+### 3. Install Python and Dependencies
 
 ```bash
 # Update system
 sudo yum update -y
 
-# Install Docker
-sudo yum install -y docker
-sudo service docker start
-sudo usermod -a -G docker ec2-user
+# Install Python and pip
+sudo yum install -y python3 python3-pip git
 
-# Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-```
-
-### 4. Deploy Application
-
-```bash
 # Clone repository
 git clone <your-repository-url>
-cd "Book Recommendation Engine"
+cd adhunik-kitaab
 
+# Install Python dependencies
+pip3 install -r requirements.txt
+```
+
+### 4. Configure Environment
+
+```bash
 # Create production environment file
-sudo nano .env
-# Add your production environment variables
+cp .env.example .env
+# Edit .env with your production values
+nano .env
+```
 
-# Build and run
-docker-compose up -d
+### 5. Run Application
+
+```bash
+# Run the application
+python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Or use screen to keep it running in background
+screen -dmS bookapp python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 5. Configure Reverse Proxy (Optional)
@@ -268,11 +257,10 @@ server {
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | Database connection string | `sqlite:///./books.db` |
-| `API_PORT` | Backend API port | `8000` |
-| `FRONTEND_PORT` | Frontend application port | `5001` |
-| `SECRET_KEY` | Flask secret key | Required |
-| `JWT_SECRET_KEY` | JWT signing key | Required |
+| `PORT` | Application port | `8000` |
+| `MONGODB_URI` | MongoDB Atlas connection string | Required |
+| `DB_NAME` | MongoDB database name | `book_reco` |
+| `SECRET_KEY` | Application secret key | Required |
 | `GOOGLE_BOOKS_API_KEY` | Google Books API key | Optional |
 
 
@@ -288,13 +276,12 @@ For support and questions, please open an issue in the GitHub repository.
 
 ### Common Issues
 
-1. **Port already in use**: Change the port numbers in the `.env` file
-2. **Database connection errors**: Ensure the database URL is correct and the database is accessible
+1. **Port already in use**: Change the port number in the `.env` file
+2. **MongoDB connection errors**: Ensure your MongoDB Atlas connection string is correct and IP is whitelisted
 3. **API key errors**: Verify your Google Books API key is valid and has the necessary permissions
-4. **Docker build fails**: Ensure Docker is running and you have sufficient disk space
+4. **Application not starting**: Check Python dependencies are installed and environment variables are set
 
 ### Logs
 
-- Application logs: `docker-compose logs app`
-- Database logs: Check your database server logs
-- Nginx logs: `/var/log/nginx/error.log` and `/var/log/nginx/access.log`
+- Application logs: Check terminal output or use `screen -r bookapp` if running in background
+- MongoDB logs: Check MongoDB Atlas dashboard for connection issues
